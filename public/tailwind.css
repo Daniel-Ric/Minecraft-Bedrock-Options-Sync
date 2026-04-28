@@ -82,6 +82,26 @@
     @apply mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-200/80 sm:text-base;
   }
 
+  .config-tabs {
+    @apply mx-auto mt-4 inline-grid grid-cols-2 rounded-sm border border-white/15 bg-black/25 p-1 backdrop-blur-xl;
+  }
+
+  .config-tabs button {
+    @apply min-h-8 rounded-sm border-0 bg-transparent px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400 hover:bg-white/10 hover:text-white focus:ring-2 focus:ring-emerald-300/30;
+  }
+
+  .config-tabs button.active {
+    @apply bg-emerald-300 text-black hover:bg-emerald-200 hover:text-black;
+  }
+
+  .advanced-config-tabs {
+    @apply mt-0 shrink-0;
+  }
+
+  .advanced-config-tabs button {
+    @apply px-3;
+  }
+
   .home-actions {
     @apply mx-auto mt-8 grid max-w-4xl items-stretch gap-4 sm:grid-cols-2;
   }
@@ -158,6 +178,10 @@
 
   .fast-sync-button {
     @apply h-[42px] min-h-0 px-7;
+  }
+
+  #chooseFastDestinationBtn {
+    @apply h-[42px] min-h-0 px-4;
   }
 
   .fast-target-summary {
@@ -355,6 +379,86 @@
 
   .source-input-row > div > span {
     @apply mb-2 block;
+  }
+
+  .flarial-export-panel {
+    @apply grid gap-3 rounded-sm border border-red-300/20 bg-red-950/10 p-3 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-end;
+  }
+
+  .flarial-export-panel label {
+    @apply text-xs font-semibold uppercase tracking-wide text-slate-400;
+  }
+
+  .flarial-export-panel > button {
+    @apply h-[46px] self-end;
+  }
+
+  .flarial-export-panel label span {
+    @apply mb-2 block;
+  }
+
+  .flarial-export-panel .flarial-legacy-toggle {
+    @apply sm:col-span-2;
+  }
+
+  .flarial-import-box {
+    @apply grid gap-3 rounded-sm border border-white/10 bg-black/20 p-3 sm:col-span-2 lg:grid-cols-[1fr_minmax(180px,260px)_minmax(220px,1fr)_auto] lg:items-end;
+  }
+
+  .flarial-import-box > div strong {
+    @apply mt-1 block text-sm font-semibold normal-case tracking-normal text-white;
+  }
+
+  .flarial-import-box button {
+    @apply h-[46px];
+  }
+
+  .import-panel {
+    @apply rounded-sm border border-white/10 bg-black/20 p-3;
+  }
+
+  .import-kind-grid {
+    @apply mt-0;
+  }
+
+  .import-grid {
+    @apply mt-3 grid gap-3 lg:grid-cols-[minmax(180px,260px)_minmax(240px,1fr)_auto] lg:items-end;
+  }
+
+  .import-grid label {
+    @apply text-xs font-semibold uppercase tracking-wide text-slate-400;
+  }
+
+  .import-grid label span {
+    @apply mb-2 block;
+  }
+
+  .import-grid button {
+    @apply h-[46px];
+  }
+
+  .import-validation-panel {
+    @apply mt-3 rounded-sm border border-white/10 bg-black/30 p-3 text-left text-sm leading-5 text-slate-300;
+  }
+
+  .import-validation-panel.ok {
+    @apply border-emerald-300/25 bg-emerald-950/20 text-emerald-100;
+  }
+
+  .import-validation-panel.blocked {
+    @apply border-red-300/35 bg-red-950/25 text-red-100;
+  }
+
+  .import-validation-panel strong {
+    @apply block text-sm font-semibold text-white;
+  }
+
+  .import-validation-panel ul {
+    @apply mt-2 list-disc space-y-1 pl-5;
+  }
+
+  .import-validation-panel p {
+    @apply mt-2 text-xs leading-5 text-slate-300;
   }
 
   .fast-summary {
@@ -630,6 +734,22 @@
     @apply mt-2 text-sm leading-5 text-slate-200;
   }
 
+  .option-popover-details {
+    @apply mt-3 grid gap-2 border-t border-white/10 pt-3;
+  }
+
+  .option-popover-detail {
+    @apply rounded-sm border border-white/10 bg-white/5 p-2;
+  }
+
+  .option-popover-detail b {
+    @apply block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400;
+  }
+
+  .option-popover-detail p {
+    @apply mt-1 text-xs leading-4 text-slate-200;
+  }
+
   .option-popover small {
     @apply mt-2 block break-all text-xs text-slate-400;
   }
@@ -664,6 +784,10 @@
 
   .backup-actions button {
     @apply min-h-8 border-red-300/25 bg-red-300/10 px-3 py-1.5 text-xs text-red-100 hover:border-red-200/50 hover:bg-red-300/15;
+  }
+
+  .backup-actions button[data-restore-backup] {
+    @apply border-emerald-300/25 bg-emerald-300/10 text-emerald-100 hover:border-emerald-200/50 hover:bg-emerald-300/15;
   }
 
   .toast-root {
@@ -732,5 +856,86 @@
 
   .hidden {
     display: none !important;
+  }
+
+  .theme-flarial {
+    background-image:
+      linear-gradient(135deg, rgba(12, 8, 10, 0.92), rgba(82, 14, 18, 0.66), rgba(8, 10, 14, 0.92)),
+      url('/assets/voxel-background.png');
+  }
+
+  .theme-flarial button:hover {
+    @apply border-red-300/60;
+  }
+
+  .theme-flarial button:focus,
+  .theme-flarial .config-tabs button:focus {
+    @apply ring-red-300/30;
+  }
+
+  .theme-flarial input[type="text"]:focus,
+  .theme-flarial input[type="search"]:focus,
+  .theme-flarial select:focus {
+    @apply border-red-300/70 ring-red-300/10;
+  }
+
+  .theme-flarial input[type="file"]::file-selector-button,
+  .theme-flarial .primary,
+  .theme-flarial .config-tabs button.active {
+    @apply border-red-200 bg-red-400 text-black hover:border-red-100 hover:bg-red-300;
+  }
+
+  .theme-flarial input[type="checkbox"],
+  .theme-flarial input[type="radio"] {
+    accent-color: #f87171;
+  }
+
+  .theme-flarial .eyebrow,
+  .theme-flarial .step,
+  .theme-flarial .inline-link,
+  .theme-flarial .text-link,
+  .theme-flarial .mini-link,
+  .theme-flarial .breadcrumbs button,
+  .theme-flarial .backup-actions a:hover,
+  .theme-flarial .option-popover span {
+    @apply text-red-200;
+  }
+
+  .theme-flarial .glass-button.fast,
+  .theme-flarial .choice-card:has(input:checked),
+  .theme-flarial .account:has(input:checked) {
+    @apply border-red-300/70 bg-red-300/15;
+  }
+
+  .theme-flarial .glass-button.fast:hover,
+  .theme-flarial .choice-card:hover,
+  .theme-flarial .account:hover,
+  .theme-flarial .chips label:hover,
+  .theme-flarial .key-list label:hover,
+  .theme-flarial .mini-link:hover {
+    @apply border-red-300/50 bg-red-300/10;
+  }
+
+  .theme-flarial .badge.ok,
+  .theme-flarial .fast-chip,
+  .theme-flarial .step-rail > span {
+    @apply border-red-300/30 bg-red-300/15 text-red-100 shadow-red-950/40;
+  }
+
+  .theme-flarial .sync-cta.primary {
+    @apply border-red-300/45 bg-red-950/80 text-red-100 hover:border-red-300/70 hover:bg-red-900/85;
+  }
+
+  .theme-flarial .sync-cta.primary span {
+    @apply text-red-100/65;
+  }
+
+  .theme-flarial .recovery-panel,
+  .theme-flarial .option-popover {
+    @apply border-red-300/20;
+  }
+
+  .theme-flarial .toast.ok {
+    @apply border-red-300/45 bg-red-950/70;
   }
 }
