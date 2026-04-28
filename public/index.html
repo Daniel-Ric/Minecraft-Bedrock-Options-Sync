@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Option Sync</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="app-bg">
+    <section id="homeView" class="home-view">
+      <div class="home-content">
+        <span class="eyebrow">Minecraft Bedrock Options Manager</span>
+        <h1>Option Sync</h1>
+        <p>Sync your Bedrock options.txt between local accounts with safe defaults and automatic backups.</p>
+
+        <div class="home-actions">
+          <button id="fastModeBtn" class="glass-button fast" type="button">
+            <span>Fast Mode</span>
+            <small>Choose source and targets. Everything else is automatic.</small>
+          </button>
+
+          <button id="advancedModeBtn" class="glass-button" type="button">
+            <span>Advanced Mode</span>
+            <small>Upload files, pick categories, select keys, and manage backups.</small>
+          </button>
+        </div>
+
+        <div id="fastPanel" class="fast-panel hidden">
+          <div class="fast-panel-head">
+            <span id="fastTargetCount" class="badge ok">0 targets</span>
+          </div>
+
+          <div class="fast-select-grid">
+            <label class="fast-field">
+              <span>From</span>
+              <select id="sourceAccount"></select>
+            </label>
+            <label class="fast-field">
+              <span>To</span>
+              <select id="fastTargets" multiple></select>
+            </label>
+            <button id="fastSyncBtn" class="primary fast-sync-button" type="button">Sync</button>
+          </div>
+
+          <div id="fastTargetSummary" class="fast-target-summary"></div>
+
+          <pre id="fastPreview" class="preview compact">Select one base account and at least one target account.</pre>
+        </div>
+
+        <p id="homeStatus" class="status-text">Loading accounts automatically...</p>
+        <button id="openUsersFolderBtn" class="text-link hidden" type="button">Open Users folder</button>
+      </div>
+    </section>
+
+    <section id="advancedView" class="advanced-view hidden">
+      <header class="advanced-header">
+        <div>
+          <nav class="breadcrumbs" aria-label="Breadcrumb">
+            <button data-view="home" type="button">Home</button>
+            <span>/</span>
+            <strong>Advanced</strong>
+          </nav>
+          <span class="eyebrow">Advanced Mode</span>
+          <h2>Option Sync Control</h2>
+        </div>
+      </header>
+
+      <section class="advanced-layout">
+        <section class="setup-panel glass-panel">
+          <div class="panel-head">
+            <div>
+              <span class="step">Setup</span>
+              <h3>Users folder</h3>
+            </div>
+            <button id="openAdvancedUsersFolderBtn" type="button">Open Folder</button>
+          </div>
+          <div class="advanced-command-bar">
+            <label>
+              <span>Minecraft Bedrock Users path</span>
+              <input id="basePath" type="text" spellcheck="false">
+            </label>
+            <div class="advanced-command-actions">
+              <button id="loadBtn" type="button">Load</button>
+              <button id="refreshBtn" type="button">Refresh</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="workflow-panel">
+          <article class="workflow-step">
+            <div class="step-rail">
+              <span>1</span>
+              <div>
+                <h3>Select targets</h3>
+                <p>Choose which accounts receive the options.</p>
+              </div>
+            </div>
+            <div class="step-content">
+              <div class="section-head">
+                <span class="step">Targets</span>
+                <div class="actions">
+                  <button id="selectAllBtn" type="button">Select All</button>
+                  <button id="selectNoneBtn" type="button">Clear</button>
+                </div>
+              </div>
+              <div id="accounts" class="account-list"></div>
+            </div>
+          </article>
+
+          <article class="workflow-step">
+            <div class="step-rail">
+              <span>2</span>
+              <div>
+                <h3>Choose source</h3>
+                <p>Select where the options are copied from.</p>
+              </div>
+            </div>
+            <div class="step-content">
+              <div class="section-head">
+                <span class="step">Source</span>
+                <span id="advancedBackupSummary" class="badge ok">Backup on</span>
+              </div>
+              <div class="choice-grid two">
+                <label class="choice-card">
+                  <input type="radio" name="sourceType" value="account" checked>
+                  <span><strong>Use base account</strong><small>Copy from the selected source account.</small></span>
+                </label>
+                <label class="choice-card">
+                  <input type="radio" name="sourceType" value="upload">
+                  <span><strong>Upload options.txt</strong><small>Use an external file as source.</small></span>
+                </label>
+              </div>
+              <div class="source-input-row">
+                <label id="advancedAccountSourceBlock" class="advanced-source-select">
+                  <span>Base account</span>
+                  <select id="advancedSourceAccount"></select>
+                </label>
+                <div id="uploadBlock" class="hidden">
+                  <span>External file</span>
+                  <input id="uploadFile" type="file" accept=".txt">
+                  <p id="uploadStatus" class="status-text hidden"></p>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="workflow-step">
+            <div class="step-rail">
+              <span>3</span>
+              <div>
+                <h3>What to copy</h3>
+                <p>Pick the data included in this sync.</p>
+              </div>
+            </div>
+            <div class="step-content">
+              <div class="section-head">
+                <span class="step">Sync details</span>
+                <label class="switch"><input id="backupToggle" type="checkbox" checked> Backup</label>
+              </div>
+              <div class="choice-grid">
+                <label class="choice-card"><input type="radio" name="mode" value="full" checked><span><strong>Full file</strong><small>Replace options.txt completely.</small></span></label>
+                <label class="choice-card"><input type="radio" name="mode" value="categories"><span><strong>Categories</strong><small>Copy graphics, audio, controls, or UI.</small></span></label>
+                <label class="choice-card"><input type="radio" name="mode" value="keys"><span><strong>Specific keys</strong><small>Pick individual settings.</small></span></label>
+              </div>
+
+              <div id="categoryPicker" class="chips hidden">
+                <label><input type="checkbox" value="graphics" checked> Graphics</label>
+                <label><input type="checkbox" value="audio" checked> Audio</label>
+                <label><input type="checkbox" value="controls" checked> Controls</label>
+                <label><input type="checkbox" value="interface" checked> Interface</label>
+                <label><input type="checkbox" value="other"> Other</label>
+              </div>
+
+              <div id="keyPicker" class="hidden">
+                <input id="keyFilter" type="search" placeholder="Search keys or categories, e.g. graphics">
+                <div id="keys" class="key-list"></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="workflow-step">
+            <div class="step-rail">
+              <span>4</span>
+              <div>
+                <h3>Preview and sync</h3>
+                <p>Review changes before applying them.</p>
+              </div>
+            </div>
+            <div class="step-content">
+              <div class="preview-head">
+                <span>Preview</span>
+                <button id="previewBtn" type="button">Preview Changes</button>
+              </div>
+              <pre id="advancedPreview" class="preview">No preview loaded yet.</pre>
+            </div>
+          </article>
+        </section>
+
+        <button id="syncBtn" class="primary sync-cta" type="button">
+          <strong>Sync Now</strong>
+          <span>Start syncing with the selected settings</span>
+        </button>
+
+        <section class="glass-panel recovery-panel">
+          <div class="panel-head">
+            <div>
+              <span class="step">Recovery</span>
+              <h3>Backups</h3>
+            </div>
+            <div class="recovery-actions">
+              <span id="backupSummary" class="badge">0 backups</span>
+              <button id="toggleBackupsBtn" type="button">Manage Backups</button>
+            </div>
+          </div>
+          <p class="backup-panel-copy">Create, download, and clean up local restore points before changing options.</p>
+        </section>
+      </section>
+    </section>
+    <div id="backupModal" class="modal-shell hidden" role="dialog" aria-modal="true" aria-labelledby="backupModalTitle">
+      <section class="backup-modal">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Recovery</span>
+            <h2 id="backupModalTitle">Backup Manager</h2>
+          </div>
+          <button id="closeBackupsBtn" class="icon-button" type="button" aria-label="Close backup manager">X</button>
+        </header>
+
+        <div class="backup-dashboard">
+          <div>
+            <span>Total backups</span>
+            <strong id="backupTotal">0</strong>
+          </div>
+          <div>
+            <span>Storage used</span>
+            <strong id="backupStorage">0 KB</strong>
+          </div>
+          <div>
+            <span>Selected targets</span>
+            <strong id="backupTargetTotal">0</strong>
+          </div>
+        </div>
+
+        <section class="backup-create-card">
+          <div>
+            <span class="step">Create backup</span>
+            <h3>Manual restore point</h3>
+          </div>
+          <div class="backup-create-grid">
+            <label>
+              <span>Backup label</span>
+              <input id="backupLabel" type="text" maxlength="40" placeholder="manual">
+            </label>
+            <label>
+              <span>Accounts</span>
+              <select id="backupScope">
+                <option value="selected">Selected targets</option>
+                <option value="all">All accounts with options</option>
+              </select>
+            </label>
+            <button id="backupBtn" class="primary" type="button">Create Backup</button>
+          </div>
+        </section>
+
+        <section class="backup-browser">
+          <div class="backup-toolbar">
+            <label>
+              <span>Search backups</span>
+              <input id="backupFilter" type="search" placeholder="Search by file or label">
+            </label>
+            <div class="backup-toolbar-actions">
+              <button id="reloadBackupsBtn" type="button">Reload</button>
+              <button id="openBackupsFolderBtn" type="button">Open Folder</button>
+              <button id="deleteAllBackupsBtn" class="danger-button" type="button">Delete All</button>
+            </div>
+          </div>
+          <div id="backups" class="backup-list"></div>
+        </section>
+      </section>
+    </div>
+    <aside id="errorDumpDock" class="error-dump-dock hidden">
+      <button id="errorDumpToggle" class="error-dump-toggle" type="button">
+        <span>Session errors</span>
+        <strong id="errorDumpCount">0</strong>
+      </button>
+      <section id="errorDumpPanel" class="error-dump-panel hidden">
+        <div class="error-dump-head">
+          <div>
+            <span class="eyebrow">Error Dump</span>
+            <h3>Session log</h3>
+          </div>
+          <div class="error-dump-actions">
+            <button id="refreshErrorsBtn" type="button">Refresh</button>
+            <button id="clearErrorsBtn" type="button">Clear</button>
+          </div>
+        </div>
+        <pre id="errorDumpOutput">No errors in this session.</pre>
+      </section>
+    </aside>
+    <div id="toastRoot" class="toast-root" aria-live="polite" aria-atomic="true"></div>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

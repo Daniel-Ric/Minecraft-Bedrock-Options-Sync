@@ -1,0 +1,736 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply m-0 min-h-screen bg-[#090a0d] text-slate-100 antialiased;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+
+  button {
+    @apply inline-flex min-h-10 items-center justify-center rounded-sm border border-white/15 bg-white/10 px-4 text-sm font-semibold text-slate-100 transition hover:border-emerald-300/60 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-300/30;
+  }
+
+  button:disabled {
+    @apply cursor-not-allowed border-white/10 bg-white/5 text-slate-500 hover:border-white/10 hover:bg-white/5;
+  }
+
+  input[type="text"],
+  input[type="search"],
+  select {
+    @apply w-full rounded-sm border border-white/15 bg-black/30 px-3 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/70 focus:ring-4 focus:ring-emerald-300/10;
+  }
+
+  select[multiple] {
+    @apply min-h-28;
+  }
+
+  input[type="file"] {
+    @apply w-full rounded-sm border border-dashed border-white/20 bg-black/25 px-3 py-3 text-sm text-slate-400 file:mr-3 file:rounded-sm file:border-0 file:bg-emerald-300 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-black;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply h-4 w-4 accent-emerald-300;
+  }
+}
+
+@layer components {
+  .app-bg {
+    @apply relative min-h-screen overflow-x-hidden;
+    background-image:
+      linear-gradient(135deg, rgba(8, 10, 14, 0.90), rgba(10, 45, 31, 0.68), rgba(8, 10, 14, 0.92)),
+      url('/assets/voxel-background.png');
+    background-position: center;
+    background-size: cover;
+    background-attachment: fixed;
+  }
+
+  .home-view {
+    @apply flex min-h-screen items-center justify-center px-4 py-10;
+  }
+
+  .home-content {
+    @apply w-full max-w-6xl text-center;
+  }
+
+  .eyebrow,
+  .step {
+    @apply text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-200/90;
+  }
+
+  .home-content h1 {
+    @apply mt-3 text-5xl font-semibold tracking-tight text-white sm:text-7xl;
+  }
+
+  .home-content > p {
+    @apply mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-200/80 sm:text-base;
+  }
+
+  .home-actions {
+    @apply mx-auto mt-8 grid max-w-4xl items-stretch gap-4 sm:grid-cols-2;
+  }
+
+  .glass-button {
+    @apply min-h-32 w-full flex-col items-start justify-center rounded-sm border border-white/25 bg-white/10 p-5 text-left shadow-xl shadow-black/20 backdrop-blur-xl hover:border-white/45 hover:bg-white/20;
+  }
+
+  .glass-button.fast {
+    @apply border-emerald-200/60 bg-emerald-300/25 hover:border-emerald-100 hover:bg-emerald-300/35;
+  }
+
+  .glass-button span {
+    @apply text-xl font-semibold text-white;
+  }
+
+  .glass-button small {
+    @apply mt-2 text-sm font-normal leading-5 text-slate-200/75;
+  }
+
+  .status-text {
+    @apply mt-4 text-sm text-slate-300;
+  }
+
+  .inline-link,
+  .text-link,
+  .mini-link {
+    @apply inline-flex min-h-0 border-0 bg-transparent p-0 font-semibold text-emerald-200 underline-offset-4 hover:bg-transparent hover:text-emerald-100 hover:underline focus:ring-0;
+  }
+
+  .text-link {
+    @apply mx-auto mt-2 text-sm;
+  }
+
+  .mini-link {
+    @apply rounded-sm border border-white/10 bg-white/5 px-2 py-1 text-[11px] no-underline hover:border-emerald-300/35 hover:bg-emerald-300/10 hover:no-underline;
+  }
+
+  .fast-panel {
+    @apply mx-auto mt-5 w-full max-w-3xl rounded-sm border border-white/20 bg-black/25 p-3 text-left shadow-xl shadow-black/20 backdrop-blur-xl sm:p-4;
+  }
+
+  .fast-select-grid {
+    @apply grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end;
+  }
+
+  .fast-panel-head {
+    @apply mb-2 flex justify-end;
+  }
+
+  .fast-panel-head h2 {
+    @apply mt-1 text-xl font-semibold tracking-tight text-white;
+  }
+
+  .fast-field {
+    @apply block min-w-0 text-left text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400;
+  }
+
+  .fast-field span {
+    @apply mb-1.5 block;
+  }
+
+  .fast-field small {
+    @apply hidden;
+  }
+
+  .fast-field select {
+    @apply border-white/10 bg-black/35 py-2.5 text-sm shadow-inner shadow-black/20;
+  }
+
+  #fastTargets {
+    @apply h-[42px] min-h-0;
+  }
+
+  .fast-sync-button {
+    @apply h-[42px] min-h-0 px-7;
+  }
+
+  .fast-target-summary {
+    @apply mt-2 flex flex-wrap items-center gap-1.5;
+  }
+
+  .fast-chip,
+  .fast-empty {
+    @apply rounded-sm border border-emerald-300/20 bg-emerald-300/10 px-2 py-1 text-[11px] font-semibold text-emerald-100;
+  }
+
+  .fast-chip.muted,
+  .fast-empty {
+    @apply border-white/15 bg-white/10 text-slate-300;
+  }
+
+  .fast-footer {
+    @apply mx-auto mt-4 flex max-w-4xl flex-col gap-3 rounded-sm border border-white/15 bg-emerald-300/10 p-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .fast-footer p {
+    @apply text-sm text-slate-300;
+  }
+
+  .flow-view,
+  .advanced-view {
+    @apply mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8;
+  }
+
+  .flow-view {
+    @apply flex items-center justify-center;
+  }
+
+  .glass-panel {
+    @apply rounded-sm border border-white/15 bg-black/30 p-4 shadow-xl shadow-black/25 backdrop-blur-xl;
+  }
+
+  .flow-card {
+    @apply w-full max-w-4xl;
+  }
+
+  .flow-head,
+  .advanced-header,
+  .panel-head {
+    @apply mb-4 flex items-start justify-between gap-4;
+  }
+
+  .advanced-header {
+    @apply mb-3 rounded-sm border border-white/15 bg-black/25 px-4 py-3 shadow-xl shadow-black/25 backdrop-blur-xl;
+  }
+
+  .breadcrumbs {
+    @apply mb-2 flex items-center gap-2 text-xs font-semibold text-slate-400;
+  }
+
+  .breadcrumbs button {
+    @apply min-h-0 border-0 bg-transparent p-0 text-xs text-emerald-200 hover:bg-transparent hover:text-emerald-100 hover:underline focus:ring-0;
+  }
+
+  .breadcrumbs strong {
+    @apply text-slate-200;
+  }
+
+  .flow-head h2,
+  .advanced-header h2,
+  .panel-head h3 {
+    @apply mt-0.5 text-xl font-semibold tracking-tight text-white;
+  }
+
+  .advanced-header p {
+    @apply mt-1 max-w-2xl text-sm text-slate-300;
+  }
+
+  .advanced-header-actions,
+  .advanced-command-actions,
+  .panel-badges {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .sync-cta {
+    @apply min-h-10 w-full flex-row justify-center gap-2 rounded-sm border px-4 py-2 text-center shadow-xl shadow-black/25 transition;
+  }
+
+  .sync-cta strong {
+    @apply text-sm leading-5;
+  }
+
+  .sync-cta span {
+    @apply mt-0 text-xs font-medium text-emerald-100/70;
+  }
+
+  .primary {
+    @apply border-emerald-200 bg-emerald-300 text-black hover:border-emerald-100 hover:bg-emerald-200;
+  }
+
+  .sync-cta.primary {
+    @apply border-emerald-300/45 bg-emerald-950/80 text-emerald-100 shadow-black/25 hover:border-emerald-300/70 hover:bg-emerald-900/85;
+  }
+
+  .sync-cta.primary span {
+    @apply text-emerald-100/65;
+  }
+
+  .sync-cta.primary:disabled {
+    @apply border-white/10 bg-slate-800/80 text-slate-500 shadow-none hover:border-white/10 hover:bg-slate-800/80;
+  }
+
+  .sync-cta.primary:disabled span {
+    @apply text-slate-600;
+  }
+
+  .form-grid {
+    @apply grid gap-4 md:grid-cols-2;
+  }
+
+  .form-grid label,
+  .advanced-source-select,
+  .path-row label {
+    @apply text-xs font-semibold uppercase tracking-wide text-slate-400;
+  }
+
+  .form-grid label span,
+  .advanced-source-select span,
+  .path-row label span {
+    @apply mb-2 block;
+  }
+
+  .advanced-source-select {
+    @apply block;
+  }
+
+  .advanced-layout {
+    @apply grid gap-3;
+  }
+
+  .advanced-overview {
+    @apply mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5;
+  }
+
+  .advanced-overview > div {
+    @apply rounded-sm border border-white/15 bg-black/25 p-3 shadow-xl shadow-black/20 backdrop-blur-xl;
+  }
+
+  .advanced-overview span {
+    @apply block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500;
+  }
+
+  .advanced-overview strong {
+    @apply mt-1 block truncate text-lg font-semibold text-white;
+  }
+
+  .setup-panel {
+    @apply p-4;
+  }
+
+  .workflow-panel {
+    @apply overflow-hidden rounded-sm border border-white/15 bg-black/25 shadow-xl shadow-black/25 backdrop-blur-xl;
+  }
+
+  .workflow-step {
+    @apply grid border-b border-white/10 last:border-b-0 lg:grid-cols-[300px_minmax(0,1fr)];
+  }
+
+  .step-rail {
+    @apply flex gap-4 border-b border-white/10 bg-black/20 p-4 lg:border-b-0 lg:border-r;
+  }
+
+  .step-rail > span {
+    @apply flex h-14 w-14 shrink-0 items-center justify-center rounded-sm border border-emerald-300/35 bg-emerald-300/15 text-3xl font-semibold text-emerald-200 shadow-inner shadow-emerald-950/40;
+  }
+
+  .step-rail h3 {
+    @apply mt-1 text-lg font-semibold text-white;
+  }
+
+  .step-rail p {
+    @apply mt-1 text-sm leading-5 text-slate-400;
+  }
+
+  .step-content {
+    @apply min-w-0 p-4;
+  }
+
+  .section-head {
+    @apply mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .source-input-row {
+    @apply mt-3 grid gap-3 sm:grid-cols-2;
+  }
+
+  .source-input-row > div {
+    @apply text-xs font-semibold uppercase tracking-wide text-slate-400;
+  }
+
+  .source-input-row > div > span {
+    @apply mb-2 block;
+  }
+
+  .fast-summary {
+    @apply mt-5 grid gap-4 rounded border border-white/15 bg-black/25 p-4 sm:grid-cols-[1fr_auto] sm:items-center;
+  }
+
+  .fast-summary span,
+  .status-grid span {
+    @apply block text-xs font-semibold uppercase tracking-wide text-slate-500;
+  }
+
+  .fast-summary strong,
+  .status-grid strong {
+    @apply mt-1 block text-lg font-semibold text-white;
+  }
+
+  .preview {
+    @apply mt-3 min-h-48 max-h-96 overflow-auto whitespace-pre-wrap rounded-sm border border-white/15 bg-black/45 p-4 font-mono text-xs leading-5 text-slate-300;
+  }
+
+  .preview.compact {
+    @apply mt-2 min-h-16 max-h-24 border-white/10 bg-black/30 p-3 text-[11px] text-slate-400;
+  }
+
+  .advanced-command-bar {
+    @apply grid gap-3 rounded-sm border border-white/10 bg-black/20 p-3 lg:grid-cols-[1fr_auto] lg:items-end;
+  }
+
+  .advanced-command-bar label {
+    @apply text-xs font-semibold uppercase tracking-wide text-slate-400;
+  }
+
+  .advanced-command-bar label span {
+    @apply mb-2 block;
+  }
+
+  .advanced-command-actions button {
+    @apply h-[46px];
+  }
+
+  .status-grid {
+    @apply my-4 grid gap-3 sm:grid-cols-3;
+  }
+
+  .status-grid > div {
+    @apply rounded-sm border border-white/15 bg-white/10 p-4 backdrop-blur-xl;
+  }
+
+  .switch {
+    @apply mt-2 flex items-center gap-2 text-sm font-medium text-slate-200;
+  }
+
+  .recovery-panel {
+    @apply border-emerald-300/10 bg-black/25;
+  }
+
+  .recovery-actions {
+    @apply flex flex-wrap items-center justify-end gap-2;
+  }
+
+  .backup-panel-copy {
+    @apply mt-3 border-t border-white/10 pt-3 text-sm leading-5 text-slate-400;
+  }
+
+  .modal-open {
+    @apply overflow-hidden;
+  }
+
+  .modal-shell {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-md;
+  }
+
+  .backup-modal {
+    @apply grid max-h-[calc(100vh-3rem)] w-full max-w-5xl gap-4 overflow-auto rounded-sm border border-white/15 bg-[#0c1110]/95 p-4 text-left shadow-2xl shadow-black/50;
+  }
+
+  .modal-head {
+    @apply flex items-start justify-between gap-4 border-b border-white/10 pb-4;
+  }
+
+  .modal-head h2 {
+    @apply mt-1 text-2xl font-semibold tracking-tight text-white;
+  }
+
+  .icon-button {
+    @apply h-9 min-h-0 w-9 rounded-sm px-0 text-sm;
+  }
+
+  .backup-dashboard {
+    @apply grid gap-3 sm:grid-cols-3;
+  }
+
+  .backup-dashboard > div,
+  .backup-create-card,
+  .backup-browser {
+    @apply rounded-sm border border-white/10 bg-black/25 p-3;
+  }
+
+  .backup-dashboard span,
+  .backup-create-grid label span,
+  .backup-toolbar label span {
+    @apply block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500;
+  }
+
+  .backup-dashboard strong {
+    @apply mt-1 block text-xl font-semibold text-white;
+  }
+
+  .backup-create-card {
+    @apply grid gap-3;
+  }
+
+  .backup-create-card h3 {
+    @apply mt-1 text-lg font-semibold text-white;
+  }
+
+  .backup-create-grid {
+    @apply grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto] lg:items-end;
+  }
+
+  .backup-create-grid label span,
+  .backup-toolbar label span {
+    @apply mb-2;
+  }
+
+  .backup-create-grid button {
+    @apply h-[46px];
+  }
+
+  .backup-toolbar {
+    @apply mb-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end;
+  }
+
+  .backup-toolbar-actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .backup-toolbar-actions button,
+  .danger-button {
+    @apply min-h-[46px];
+  }
+
+  .danger-button {
+    @apply border-red-300/30 bg-red-950/50 text-red-100 hover:border-red-200/60 hover:bg-red-900/65;
+  }
+
+  .actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .account-list {
+    @apply grid max-h-[360px] gap-2 overflow-auto pr-1;
+  }
+
+  .account {
+    @apply grid cursor-pointer grid-cols-[20px_minmax(0,1fr)_auto] items-center gap-3 rounded-sm border border-white/10 bg-black/20 p-3 transition hover:border-emerald-300/50 hover:bg-emerald-300/10;
+  }
+
+  .account:has(input:checked) {
+    @apply border-emerald-300/70 bg-emerald-300/15;
+  }
+
+  .account strong {
+    @apply block truncate text-sm font-semibold text-slate-100;
+  }
+
+  .account small {
+    @apply block truncate text-xs text-slate-500;
+  }
+
+  .badge {
+    @apply rounded-sm border border-white/15 bg-white/10 px-2 py-1 text-xs font-semibold text-slate-300;
+  }
+
+  .badge.ok {
+    @apply border-emerald-300/25 bg-emerald-300/15 text-emerald-200;
+  }
+
+  .badge.active {
+    @apply border-lime-200/50 bg-lime-300/25 text-lime-100;
+  }
+
+  .badge.missing {
+    @apply border-red-300/25 bg-red-300/15 text-red-200;
+  }
+
+  .choice-grid {
+    @apply my-3 grid gap-2 md:grid-cols-3;
+  }
+
+  .choice-grid.two {
+    @apply md:grid-cols-2;
+  }
+
+  .choice-card {
+    @apply flex min-h-16 cursor-pointer items-start gap-3 rounded-sm border border-white/10 bg-black/20 p-3 text-sm text-slate-200 transition hover:border-emerald-300/50 hover:bg-emerald-300/10;
+  }
+
+  .choice-card:has(input:checked) {
+    @apply border-emerald-300/70 bg-emerald-300/15;
+  }
+
+  .choice-card strong {
+    @apply block text-sm font-semibold text-white;
+  }
+
+  .choice-card small {
+    @apply mt-1 block text-xs leading-4 text-slate-400;
+  }
+
+  .chips {
+    @apply mt-3 flex flex-wrap gap-2;
+  }
+
+  .chips label,
+  .key-list label {
+    @apply flex min-w-0 items-center gap-2 rounded-sm border border-white/15 bg-black/25 px-3 py-2 text-sm text-slate-300 hover:border-emerald-300/40 hover:bg-emerald-300/10;
+  }
+
+  .key-list label.key-row {
+    @apply grid grid-cols-[auto_minmax(0,1fr)] gap-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(110px,150px)_auto];
+  }
+
+  .key-list label.key-row.locked {
+    @apply border-red-300/20 bg-red-950/20 text-slate-500 hover:border-red-300/30 hover:bg-red-950/25;
+  }
+
+  .key-row > span {
+    @apply min-w-0;
+  }
+
+  .option-value-input {
+    @apply col-span-2 h-9 min-w-0 rounded-sm border-white/10 bg-black/30 px-2 py-1.5 font-mono text-xs sm:col-span-1;
+  }
+
+  .option-save-button {
+    @apply col-span-2 h-9 min-h-0 px-3 py-1.5 text-xs sm:col-span-1;
+  }
+
+  .preview-head {
+    @apply mt-4 flex items-center justify-between gap-3;
+  }
+
+  .preview-head span {
+    @apply text-xs font-semibold uppercase tracking-wide text-slate-400;
+  }
+
+  .preview-head button {
+    @apply min-h-8 px-3 py-1.5 text-xs;
+  }
+
+  .key-list {
+    @apply mt-3 grid max-h-64 grid-cols-1 gap-2 overflow-auto pr-1 xl:grid-cols-2;
+  }
+
+  .key-list span {
+    @apply truncate;
+  }
+
+  .option-popover {
+    @apply pointer-events-none fixed z-[60] max-w-sm rounded-sm border border-emerald-300/30 bg-black/90 p-3 text-left shadow-2xl shadow-black/45 backdrop-blur-xl;
+  }
+
+  .option-popover strong {
+    @apply block break-all text-sm font-semibold text-white;
+  }
+
+  .option-popover span {
+    @apply mt-1 block text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200;
+  }
+
+  .option-popover p {
+    @apply mt-2 text-sm leading-5 text-slate-200;
+  }
+
+  .option-popover small {
+    @apply mt-2 block break-all text-xs text-slate-400;
+  }
+
+  .option-popover em {
+    @apply mt-2 block not-italic text-xs font-semibold text-red-200;
+  }
+
+  .backup-list {
+    @apply grid gap-2;
+  }
+
+  .backup-list > div {
+    @apply flex flex-col gap-3 rounded-sm border border-white/15 bg-black/25 p-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .backup-item strong {
+    @apply block max-w-full truncate text-sm font-semibold text-slate-100;
+  }
+
+  .backup-item span {
+    @apply mt-1 block text-xs text-slate-500;
+  }
+
+  .backup-actions {
+    @apply flex shrink-0 flex-wrap gap-2;
+  }
+
+  .backup-actions a {
+    @apply truncate text-sm font-semibold text-slate-100 underline-offset-4 hover:text-emerald-200 hover:underline;
+  }
+
+  .backup-actions button {
+    @apply min-h-8 border-red-300/25 bg-red-300/10 px-3 py-1.5 text-xs text-red-100 hover:border-red-200/50 hover:bg-red-300/15;
+  }
+
+  .toast-root {
+    @apply pointer-events-none fixed bottom-4 right-4 z-50 grid w-[calc(100vw-2rem)] max-w-sm gap-2 sm:bottom-5 sm:right-5;
+  }
+
+  .error-dump-dock {
+    @apply fixed bottom-4 left-4 z-40 w-[calc(100vw-2rem)] max-w-xl sm:bottom-5 sm:left-5;
+  }
+
+  .error-dump-toggle {
+    @apply min-h-10 gap-3 border-red-300/35 bg-red-950/60 px-3 backdrop-blur-xl hover:border-red-200/60 hover:bg-red-900/70;
+  }
+
+  .error-dump-toggle strong {
+    @apply rounded border border-red-200/30 bg-red-300/15 px-2 py-0.5 text-xs text-red-100;
+  }
+
+  .error-dump-panel {
+    @apply mt-2 rounded border border-red-300/30 bg-black/70 p-4 text-left shadow-2xl shadow-black/45 backdrop-blur-xl;
+  }
+
+  .error-dump-head {
+    @apply mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between;
+  }
+
+  .error-dump-head h3 {
+    @apply mt-1 text-lg font-semibold text-white;
+  }
+
+  .error-dump-actions {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .error-dump-actions button {
+    @apply min-h-8 px-3 py-1.5 text-xs;
+  }
+
+  #errorDumpOutput {
+    @apply max-h-72 overflow-auto whitespace-pre-wrap rounded border border-white/10 bg-black/45 p-3 font-mono text-xs leading-5 text-red-100/90;
+  }
+
+  .toast {
+    @apply pointer-events-auto rounded border border-white/20 bg-black/55 p-4 text-left shadow-2xl shadow-black/40 backdrop-blur-xl transition;
+  }
+
+  .toast strong {
+    @apply block text-sm font-semibold text-white;
+  }
+
+  .toast span {
+    @apply mt-1 block text-sm leading-5 text-slate-300;
+  }
+
+  .toast.ok {
+    @apply border-emerald-300/45 bg-emerald-950/70;
+  }
+
+  .toast.err {
+    @apply border-red-300/45 bg-red-950/70;
+  }
+
+  .toast.warn {
+    @apply border-yellow-300/45 bg-yellow-950/70;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+}
