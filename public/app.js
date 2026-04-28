@@ -1,4 +1,5 @@
 const state = {
+  configType: 'vanilla',
   basePath: '',
   accounts: [],
   uploadId: null,
@@ -6,6 +7,60 @@ const state = {
   minecraftRunning: false,
   errors: [],
   backups: [],
+};
+
+const MODE_COPY = {
+  vanilla: {
+    label: 'Vanilla',
+    slogan: 'Sync your Bedrock options.txt between local accounts with safe defaults and automatic backups.',
+    pathTitle: 'Users folder',
+    pathLabel: 'Minecraft Bedrock Users path',
+    itemName: 'account',
+    itemNamePlural: 'accounts',
+    configFile: 'options.txt',
+    fastCopy: 'Choose source and targets. Everything else is automatic.',
+    advancedCopy: 'Upload files, pick categories, select keys, and manage backups.',
+    targetCopy: 'Choose which accounts receive the options.',
+    sourceTitle: 'Use base account',
+    sourceCopy: 'Copy from the selected source account.',
+    uploadTitle: 'Upload options.txt',
+    uploadCopy: 'Use an external file as source.',
+    sourceSelectLabel: 'Base account',
+    uploadAccept: '.txt',
+    categories: [
+      ['graphics', 'Graphics'],
+      ['audio', 'Audio'],
+      ['controls', 'Controls'],
+      ['interface', 'Interface'],
+      ['other', 'Other'],
+    ],
+  },
+  flarial: {
+    label: 'Flarial Client',
+    slogan: 'Save, export, and tune your Flarial Client profiles anywhere on this PC with automatic restore points.',
+    pathTitle: 'Config folder',
+    pathLabel: 'Flarial Client Config path',
+    itemName: 'profile',
+    itemNamePlural: 'profiles',
+    configFile: 'Flarial .json',
+    fastCopy: 'Pick a Flarial profile and save it directly to another folder on this PC.',
+    advancedCopy: 'Export full folders, selected module groups, exact values, and still edit profile settings in place.',
+    targetCopy: 'Choose where the Flarial config should be saved or copied on this PC.',
+    sourceTitle: 'Use base profile',
+    sourceCopy: 'Copy from the selected Flarial profile.',
+    uploadTitle: 'Upload Flarial JSON',
+    uploadCopy: 'Use an external Flarial profile JSON as source.',
+    sourceSelectLabel: 'Base profile',
+    uploadAccept: '.json',
+    categories: [
+      ['hud', 'HUD'],
+      ['visuals', 'Visuals'],
+      ['controls', 'Controls'],
+      ['combat', 'Combat'],
+      ['client', 'Client'],
+      ['other', 'Other'],
+    ],
+  },
 };
 
 const $ = (id) => document.getElementById(id);
@@ -241,7 +296,11 @@ async function api(path, options = {}) {
     ...options,
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Request failed.');
+  if (!response.ok) {
+    const error = new Error(data.error || 'Request failed.');
+    error.validation = data.validation;
+    throw error;
+  }
   return data;
 }
 
@@ -305,8 +364,16 @@ function selectedModeLabel() {
   }[selectedMode()] || 'Full file';
 }
 
+function activeModeCopy() {
+  return MODE_COPY[state.configType] || MODE_COPY.vanilla;
+}
+
 function selectedSourceType() {
   return document.querySelector('input[name="sourceType"]:checked').value;
+}
+
+function selectedImportKind() {
+  return document.querySelector('input[name="importKind"]:checked')?.value || 'file';
 }
 
 function selectedDestinationIds() {
@@ -314,6 +381,9 @@ function selectedDestinationIds() {
 }
 
 function fastTargetIds() {
+  if (state.configType === 'flarial') {
+    return $('fastDestinationPath')?.value.trim() ? ['__flarial_export__'] : [];
+  }
   return [...$('fastTargets').selectedOptions].map((option) => option.value);
 }
 
@@ -329,6 +399,10 @@ function isFastModeActive() {
 }
 
 function activeDestinationIds() {
+  if (state.configType === 'flarial') {
+    const destination = isFastModeActive() ? $('fastDestinationPath')?.value.trim() : $('flarialDestinationPath')?.value.trim();
+    return destination ? ['__flarial_export__'] : [];
+  }
   if (isFastModeActive()) {
     const sourceId = $('sourceAccount').value;
     return fastTargetIds().filter((id) => id !== sourceId);
@@ -340,6 +414,7 @@ function activeDestinationIds() {
 }
 
 function backupScopeIds() {
+  if (state.configType === 'flarial') return ['__all__'];
   if ($('backupScope')?.value === 'all') {
     return state.accounts.filter((account) => account.hasOptions).map((account) => account.id);
   }
@@ -372,8 +447,10 @@ function sourcePayload() {
 }
 
 function syncPayload() {
+  const configType = state.configType;
   if (isFastModeActive()) {
     return {
+      configType,
       basePath: state.basePath,
       source: { type: 'account', accountId: $('sourceAccount').value },
       destinationIds: activeDestinationIds(),
@@ -385,6 +462,7 @@ function syncPayload() {
   }
 
   return {
+    configType,
     basePath: state.basePath,
     source: sourcePayload(),
     destinationIds: activeDestinationIds(),
@@ -396,12 +474,13 @@ function syncPayload() {
 }
 
 function validatePayload(payload, { previewOnly = false } = {}) {
-  if (!state.basePath) throw new Error('Minecraft Users folder is missing.');
-  if (!state.accounts.length) throw new Error('No accounts found. Check the Users folder in Advanced Mode.');
-  if (payload.source.type === 'account' && !payload.source.accountId) throw new Error('Select a base account first.');
-  if (payload.source.type === 'upload' && !payload.source.uploadId) throw new Error('Upload an options.txt file first.');
-  if (!payload.destinationIds.length) throw new Error('Select at least one target account.');
-  if (payload.destinationIds.includes(payload.source.accountId)) throw new Error('The base account cannot also be a target.');
+  const copy = activeModeCopy();
+  if (!state.basePath) throw new Error(`${copy.pathTitle} is missing.`);
+  if (!state.accounts.length) throw new Error(`No ${copy.itemNamePlural} found. Check the path in Advanced Mode.`);
+  if (payload.source.type === 'account' && !payload.source.accountId) throw new Error(`Select a base ${copy.itemName} first.`);
+  if (payload.source.type === 'upload' && !payload.source.uploadId) throw new Error(`Upload a ${copy.configFile} file first.`);
+  if (!payload.destinationIds.length) throw new Error(`Select at least one target ${copy.itemName}.`);
+  if (payload.destinationIds.includes(payload.source.accountId)) throw new Error(`The base ${copy.itemName} cannot also be a target.`);
   if (payload.mode === 'categories' && !payload.categories.length) throw new Error('Select at least one category.');
   if (payload.mode === 'keys' && !payload.keys.length) throw new Error('Select at least one key.');
   if (!previewOnly && payload.backup !== false && !payload.destinationIds.length) throw new Error('Backup requires at least one target account.');
@@ -412,7 +491,11 @@ function updateSelectedCount() {
   const count = activeDestinationIds().length;
   if (selectedCount) selectedCount.textContent = String(count);
   const fastTargetCount = $('fastTargetCount');
-  if (fastTargetCount) fastTargetCount.textContent = `${count} target${count === 1 ? '' : 's'}`;
+  if (fastTargetCount) {
+    fastTargetCount.textContent = state.configType === 'flarial'
+      ? (count ? 'Save target set' : 'No save target')
+      : `${count} target${count === 1 ? '' : 's'}`;
+  }
   $('fastSyncBtn').disabled = !state.accounts.length || !$('sourceAccount').value || count === 0;
   $('syncBtn').disabled = !state.accounts.length || count === 0;
   const backupTargetTotal = $('backupTargetTotal');
@@ -433,6 +516,142 @@ function renderAdvancedSummary() {
     backupSummary.classList.toggle('ok', $('backupToggle').checked);
     backupSummary.classList.toggle('missing', !$('backupToggle').checked);
   }
+}
+
+function flarialExportPayload() {
+  const fast = isFastModeActive();
+  return {
+    configType: 'flarial',
+    basePath: state.basePath,
+    source: fast ? { type: 'account', accountId: $('sourceAccount').value } : sourcePayload(),
+    destinationPath: fast ? $('fastDestinationPath').value.trim() : $('flarialDestinationPath').value.trim(),
+    exportScope: fast ? 'profile' : $('flarialExportScope').value,
+    includeLegacy: fast ? false : $('flarialIncludeLegacy').checked,
+    mode: fast || $('flarialExportScope').value === 'folder' ? 'full' : selectedMode(),
+    backup: fast ? true : $('backupToggle').checked,
+    categories: fast ? [] : [...document.querySelectorAll('#categoryPicker input:checked')].map((input) => input.value),
+    keys: fast ? [] : [...document.querySelectorAll('#keys input:checked')].map((input) => input.value),
+  };
+}
+
+function validateFlarialExportPayload(payload, { previewOnly = false } = {}) {
+  if (!state.basePath) throw new Error('Flarial Config folder is missing.');
+  if (!state.accounts.length) throw new Error('No Flarial profiles found. Check the Config path in Advanced Mode.');
+  if (!payload.destinationPath) throw new Error('Enter a destination folder or .json file on this PC.');
+  if (payload.exportScope !== 'folder') {
+    if (payload.source.type === 'account' && !payload.source.accountId) throw new Error('Select a Flarial source profile first.');
+    if (payload.source.type === 'upload' && !payload.source.uploadId) throw new Error('Upload a Flarial .json config file first.');
+    if (payload.mode === 'categories' && !payload.categories.length) throw new Error('Select at least one Flarial category.');
+    if (payload.mode === 'keys' && !payload.keys.length) throw new Error('Select at least one Flarial value.');
+  }
+  if (!previewOnly && payload.backup !== false && !state.basePath) throw new Error('Backup requires a loaded Flarial Config folder.');
+}
+
+function renderCategoryPicker() {
+  const categories = activeModeCopy().categories;
+  $('categoryPicker').innerHTML = categories.map(([value, label], index) =>
+    `<label><input type="checkbox" value="${escapeHtml(value)}" ${index < 4 ? 'checked' : ''}> ${escapeHtml(label)}</label>`
+  ).join('');
+}
+
+function applyConfigModeText() {
+  const copy = activeModeCopy();
+  const flarial = state.configType === 'flarial';
+  $('appRoot').classList.toggle('theme-flarial', state.configType === 'flarial');
+  document.querySelectorAll('[data-config-type]').forEach((button) => {
+    const active = button.dataset.configType === state.configType;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+  });
+  $('slogan').textContent = copy.slogan;
+  $('fastModeCopy').textContent = copy.fastCopy;
+  $('advancedModeCopy').textContent = copy.advancedCopy;
+  $('pathPanelTitle').textContent = copy.pathTitle;
+  $('pathLabel').textContent = copy.pathLabel;
+  $('targetsCopy').textContent = copy.targetCopy;
+  $('sourceAccountTitle').textContent = copy.sourceTitle;
+  $('sourceAccountCopy').textContent = copy.sourceCopy;
+  $('uploadSourceTitle').textContent = copy.uploadTitle;
+  $('uploadSourceCopy').textContent = copy.uploadCopy;
+  $('sourceSelectLabel').textContent = copy.sourceSelectLabel;
+  $('uploadFile').accept = copy.uploadAccept;
+  $('importFile').accept = copy.uploadAccept;
+  $('importFileCopy').textContent = flarial ? 'Import one Flarial profile JSON after format validation.' : 'Import one options.txt into a selected local account after validation.';
+  $('importFolderCopy').textContent = flarial ? 'Import a Flarial Config folder after profile compatibility checks.' : 'Import a folder containing account options.txt files after validation.';
+  $('importFileLabel').textContent = flarial ? 'Flarial JSON file' : 'options.txt file';
+  $('importFolderLabel').textContent = flarial ? 'Flarial Config folder' : 'Minecraft Users/account folder';
+  $('importTargetAccountLabel').textContent = flarial ? 'Unused for folder imports' : 'Target account';
+  $('fastTargetsField').classList.toggle('hidden', flarial);
+  $('fastDestinationField').classList.toggle('hidden', !flarial);
+  $('chooseFastDestinationBtn').classList.toggle('hidden', !flarial);
+  $('targetActions').classList.toggle('hidden', flarial);
+  $('accounts').classList.toggle('hidden', flarial);
+  $('flarialExportPanel').classList.toggle('hidden', !flarial);
+  $('targetsStepLabel').textContent = flarial ? 'Save target' : 'Targets';
+  $('targetsTitle').textContent = flarial ? 'Choose save location' : 'Select targets';
+  $('fastSyncBtn').textContent = flarial ? 'Save' : 'Sync';
+  $('syncCtaTitle').textContent = flarial ? 'Save / Export Now' : 'Sync Now';
+  $('syncCtaCopy').textContent = flarial ? 'Write the selected Flarial config to the destination path' : 'Start syncing with the selected settings';
+  renderCategoryPicker();
+  renderImportControls();
+}
+
+function renderImportControls() {
+  const flarial = state.configType === 'flarial';
+  const folder = selectedImportKind() === 'folder';
+  $('importTargetAccountBlock').classList.toggle('hidden', flarial || folder);
+  $('importTargetNameBlock').classList.toggle('hidden', !flarial || folder);
+  $('importFileBlock').classList.toggle('hidden', folder);
+  $('importFolderBlock').classList.toggle('hidden', !folder);
+  $('importConfigBtn').textContent = folder ? 'Validate and Import Folder' : 'Validate and Import File';
+  $('importValidationBadge').textContent = 'No import selected';
+  $('importValidationBadge').classList.remove('ok', 'missing');
+}
+
+function renderImportValidation(validation, { blocked = false } = {}) {
+  const panel = $('importValidationPanel');
+  const badge = $('importValidationBadge');
+  if (!validation) {
+    panel.classList.add('hidden');
+    badge.textContent = 'No import selected';
+    badge.classList.remove('ok', 'missing');
+    return;
+  }
+
+  panel.classList.remove('hidden', 'ok', 'blocked');
+  panel.classList.add(blocked || validation.ok === false ? 'blocked' : 'ok');
+  badge.textContent = blocked || validation.ok === false ? 'Import blocked' : 'Import validated';
+  badge.classList.toggle('ok', !(blocked || validation.ok === false));
+  badge.classList.toggle('missing', blocked || validation.ok === false);
+
+  const warnings = validation.warnings || [];
+  const advice = validation.advice || [];
+  panel.innerHTML = `
+    <strong>${escapeHtml(validation.title || (validation.ok === false ? 'Import blocked' : 'Import validation passed'))}</strong>
+    ${warnings.length ? `<ul>${warnings.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '<p>No compatibility problems were detected.</p>'}
+    ${advice.length ? `<p>${escapeHtml(advice.join(' '))}</p>` : ''}
+  `;
+}
+
+async function setConfigType(configType) {
+  if (state.configType === configType) return;
+  state.configType = configType;
+  state.uploadId = null;
+  state.sourceOptions = [];
+  $('uploadFile').value = '';
+  $('uploadStatus').textContent = '';
+  applyConfigModeText();
+  const defaults = await api(`/api/default-path?configType=${encodeURIComponent(state.configType)}`);
+  $('basePath').value = defaults.path;
+  if (defaults.exportPath) {
+    $('fastDestinationPath').value = defaults.exportPath;
+    $('flarialDestinationPath').value = defaults.exportPath;
+  }
+  if (defaults.exportPath) {
+    $('fastDestinationPath').value = defaults.exportPath;
+    $('flarialDestinationPath').value = defaults.exportPath;
+  }
+  await loadAccounts();
 }
 
 function showView(name) {
@@ -467,6 +686,7 @@ function renderAccounts() {
     .join('');
   $('sourceAccount').innerHTML = sourceOptions;
   $('advancedSourceAccount').innerHTML = sourceOptions;
+  if ($('importTargetAccount')) $('importTargetAccount').innerHTML = sourceOptions;
   renderFastTargets();
   document.querySelectorAll('.account-check').forEach((input) => input.addEventListener('change', updateSelectedCount));
   updateSelectedCount();
@@ -475,7 +695,7 @@ function renderAccounts() {
 function renderFastTargets() {
   const sourceId = $('sourceAccount').value;
   $('fastTargets').innerHTML = state.accounts
-    .filter((account) => account.id !== sourceId)
+    .filter((account) => account.id !== sourceId && account.hasOptions)
     .map((account) => `<option value="${account.id}" selected>${escapeHtml(account.displayName)}</option>`)
     .join('');
   renderFastTargetSummary();
@@ -484,6 +704,14 @@ function renderFastTargets() {
 function renderFastTargetSummary() {
   const targetSummary = $('fastTargetSummary');
   if (!targetSummary) return;
+
+  if (state.configType === 'flarial') {
+    const destination = $('fastDestinationPath')?.value.trim();
+    targetSummary.innerHTML = destination
+      ? `<span class="fast-chip">Save to ${escapeHtml(destination)}</span>`
+      : '<span class="fast-empty">Enter a destination folder or .json file</span>';
+    return;
+  }
 
   const selectedIds = new Set(fastTargetIds());
   const selectedAccounts = state.accounts.filter((account) => selectedIds.has(account.id));
@@ -520,10 +748,12 @@ function applyAutoDefaults() {
   setRadioValue('sourceType', 'account');
   setRadioValue('mode', 'full');
   $('backupToggle').checked = true;
-  document.querySelectorAll('.account-check').forEach((input) => {
-    const account = state.accounts.find((item) => item.id === input.value);
-    input.checked = Boolean(account?.hasOptions);
-  });
+  if (state.configType !== 'flarial') {
+    document.querySelectorAll('.account-check').forEach((input) => {
+      const account = state.accounts.find((item) => item.id === input.value);
+      input.checked = Boolean(account?.hasOptions);
+    });
+  }
   renderFastTargets();
   updateSourceVisibility();
   updateModeVisibility();
@@ -532,9 +762,11 @@ function applyAutoDefaults() {
 
 async function loadAccounts({ preserveOutput = false } = {}) {
   state.basePath = $('basePath').value.trim();
-  toast('Loading accounts', 'Scanning the Minecraft Bedrock Users folder.');
-  const data = await api(`/api/accounts?basePath=${encodeURIComponent(state.basePath)}`);
+  const copy = activeModeCopy();
+  toast(`Loading ${copy.itemNamePlural}`, `Scanning the ${copy.pathTitle.toLowerCase()}.`);
+  const data = await api(`/api/accounts?configType=${encodeURIComponent(state.configType)}&basePath=${encodeURIComponent(state.basePath)}`);
   state.basePath = data.basePath;
+  state.configType = data.configType || state.configType;
   state.accounts = data.accounts;
   state.minecraftRunning = Boolean(data.minecraftRunning);
   $('basePath').value = data.basePath;
@@ -543,15 +775,15 @@ async function loadAccounts({ preserveOutput = false } = {}) {
   await loadSourceOptions();
   await loadBackups({ silent: true });
   const message = state.accounts.length
-    ? `Ready. Found ${state.accounts.length} account(s). The most recently used profile data is marked as likely active.`
-    : 'No numeric account folders were found. Open Advanced Mode and check the Users folder.';
+    ? `Ready. Found ${state.accounts.length} ${copy.itemNamePlural}. The most recently changed entry is marked as likely active.`
+    : `No ${copy.itemNamePlural} were found. Open Advanced Mode and check the ${copy.pathTitle.toLowerCase()}.`;
   $('homeStatus').innerHTML = state.accounts.length
-    ? `Ready. Found <button class="inline-link" type="button" data-open-users-folder>${state.accounts.length} account(s)</button>.`
+    ? `Ready. Found <button class="inline-link" type="button" data-open-users-folder>${state.accounts.length} ${copy.itemNamePlural}</button>.`
     : escapeHtml(message);
   $('openUsersFolderBtn').classList.toggle('hidden', !state.accounts.length);
   bindOpenFolderLinks();
   if (!preserveOutput) writeOutput(message);
-  toast(state.accounts.length ? 'Accounts loaded' : 'No accounts found', state.accounts.length ? `${state.accounts.length} account(s) ready.` : 'Check the Users folder in Advanced Mode.', state.accounts.length ? 'ok' : 'warn');
+  toast(state.accounts.length ? `${copy.label} loaded` : `No ${copy.itemNamePlural} found`, state.accounts.length ? `${state.accounts.length} ${copy.itemNamePlural} ready.` : `Check the ${copy.pathTitle.toLowerCase()} in Advanced Mode.`, state.accounts.length ? 'ok' : 'warn');
 }
 
 function bindOpenFolderLinks() {
@@ -561,9 +793,27 @@ function bindOpenFolderLinks() {
 }
 
 async function openUsersFolder() {
-  if (!state.basePath) throw new Error('Minecraft Users folder is missing.');
-  await api(`/api/open-users-folder?basePath=${encodeURIComponent(state.basePath)}`);
-  toast('Users folder opened', state.basePath, 'ok');
+  if (!state.basePath) throw new Error(`${activeModeCopy().pathTitle} is missing.`);
+  await api(`/api/open-users-folder?configType=${encodeURIComponent(state.configType)}&basePath=${encodeURIComponent(state.basePath)}`);
+  toast(`${activeModeCopy().pathTitle} opened`, state.basePath, 'ok');
+}
+
+async function chooseFolderFor(inputId, purpose = 'base') {
+  const input = $(inputId);
+  if (!input) return;
+  const data = await api('/api/select-folder', {
+    method: 'POST',
+    body: JSON.stringify({
+      configType: state.configType,
+      purpose,
+      initialPath: input.value.trim() || state.basePath,
+    }),
+  });
+  if (data.canceled || !data.path) return;
+  input.value = data.path;
+  if (inputId === 'basePath') await loadAccounts();
+  else updateSelectedCount();
+  toast('Folder selected', data.path, 'ok');
 }
 
 async function loadSourceOptions() {
@@ -574,7 +824,7 @@ async function loadSourceOptions() {
     renderKeys();
     return;
   }
-  const data = await api(`/api/accounts/${encodeURIComponent(sourceId)}/options?basePath=${encodeURIComponent(state.basePath)}`);
+  const data = await api(`/api/accounts/${encodeURIComponent(sourceId)}/options?configType=${encodeURIComponent(state.configType)}&basePath=${encodeURIComponent(state.basePath)}`);
   state.sourceOptions = data.options;
   renderKeys();
 }
@@ -595,7 +845,157 @@ function renderKeys() {
   `).join('');
 }
 
+function humanizeKeyPart(value) {
+  return String(value || '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseJsonLikeValue(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return '';
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function interpretedValue(option) {
+  const key = option.key.toLowerCase();
+  const raw = String(option.value ?? '').trim();
+  const parsed = parseJsonLikeValue(raw);
+
+  if (raw === '0' || raw === '1' || parsed === true || parsed === false) {
+    const on = raw === '1' || parsed === true;
+    if (/enabled|favorite|show|hide|toggle|fullscreen|vsync|autojump|invert|vibration|trusted|subtitles|cloud|shadow|blur|border|outline|overlay/i.test(option.key)) {
+      return on ? 'Enabled / on' : 'Disabled / off';
+    }
+  }
+
+  if (key.includes('thirdperson')) {
+    return ({ 0: 'First person', 1: 'Third person back', 2: 'Third person front' })[raw] || `Camera mode ${raw}`;
+  }
+
+  if (key.includes('difficulty')) {
+    return ({ 0: 'Peaceful', 1: 'Easy', 2: 'Normal', 3: 'Hard' })[raw] || `Difficulty value ${raw}`;
+  }
+
+  if (key.includes('language')) return `Language code ${raw || '<empty>'}`;
+
+  const number = Number(raw);
+  if (Number.isFinite(number)) {
+    if (/volume|opacity|alpha|gamma|sensitivity|scale|safe_zone|strength|speed|percentage/i.test(option.key)) {
+      const percent = number <= 1 && number >= 0 ? Math.round(number * 100) : number;
+      return `${percent}% style slider value`;
+    }
+    if (/fov|field_of_view/i.test(option.key)) return `${number} field-of-view value`;
+    if (/x$|y$|pos|padding|width|height|offset|anchor/i.test(option.key)) return `Numeric layout/position value ${number}`;
+    if (/key|bind|hotkey/i.test(option.key)) return `Input code ${number}`;
+  }
+
+  if (Array.isArray(parsed)) return `List with ${parsed.length} item(s)`;
+  if (parsed && typeof parsed === 'object') return `Object with ${Object.keys(parsed).length} field(s)`;
+  if (/^#?[0-9a-f]{6,8}$/i.test(raw)) return `Color value ${raw}`;
+  if (/^\d+\s*,\s*\d+\s*,\s*\d+/i.test(raw)) return `RGB-like color value ${raw}`;
+  return raw ? `Raw value: ${valueText(raw)}` : 'Empty value';
+}
+
+function optionSyncAdvice(option) {
+  if (option.syncable === false) return 'Locked because it can contain identity, entitlement, account, or service state.';
+  if (state.configType === 'flarial') {
+    const key = option.key.toLowerCase();
+    if (/key|bind|hotkey/.test(key)) return 'Portable inside Flarial, but only useful if the target PC uses the same keyboard/mouse layout.';
+    if (/x|y|pos|scale|anchor|padding|width|height/.test(key)) return 'Safe to export, but layout can look different on another resolution or UI scale.';
+    if (/color|rgb|opacity|blur|glow|border/.test(key)) return 'Safe visual preference. Good candidate for profile presets.';
+    return 'Safe Flarial profile value. Exporting it changes only the saved client profile JSON.';
+  }
+  if (/(last_|xuid|account|iap_|playfab|store_|realms|server|mp_)/i.test(option.key)) return 'Treat carefully: this is account, marketplace, multiplayer, or service state.';
+  if (/(gfx_|audio_|ctrl_|keyboard|mouse|gamepad|chat|language)/i.test(option.key)) return 'Generally safe to sync between local Bedrock accounts.';
+  return 'Usually safe, but preview first because Bedrock can rewrite unknown or version-specific values.';
+}
+
+function flarialModuleDescription(moduleName) {
+  const name = moduleName.toLowerCase();
+  const known = {
+    animations: 'Controls Flarial animation behavior and animation speed preferences.',
+    armorhud: 'HUD overlay showing armor and item durability information.',
+    'arrow counter': 'HUD counter for arrows or projectile-related inventory state.',
+    'audio controller': 'Windows media/audio control module using configured keybinds.',
+    'auto gg': 'Chat automation that sends a configured message after supported match events.',
+    'auto perspective': 'Automatically changes camera perspective during actions such as elytra, swimming, riding, or emoting.',
+    'better inventory': 'Inventory quality-of-life module for extra item data, previews, durability, and tooltips.',
+    'block outline': 'Visual module for block outline and overlay styling.',
+    'bow sensitivity': 'Temporarily lowers sensitivity while aiming with a bow.',
+    clickgui: 'Flarial settings interface module; stores menu colors, layout, search, and theme behavior.',
+    coordinates: 'HUD overlay displaying player coordinates.',
+    cps: 'HUD overlay displaying clicks per second.',
+    'custom crosshair': 'Visual module replacing or styling the crosshair.',
+    directionhud: 'HUD overlay showing direction and navigation information.',
+    freelook: 'Camera module allowing independent look direction where supported.',
+    fullbright: 'Visual module that increases scene brightness.',
+    hitbox: 'Visual module for hitbox rendering.',
+    'hive statistics': 'Server-statistics HUD for Hive-related game stats.',
+    keystrokes: 'HUD/input overlay showing pressed movement and mouse keys.',
+    memory: 'HUD overlay for memory/performance information.',
+    'motion blur': 'Post-processing visual module for blur while moving.',
+    nametag: 'Visual module for player/entity nametag behavior.',
+    'ping counter': 'HUD overlay showing ping/network latency.',
+    potionhud: 'HUD overlay for active potion and effect information.',
+    tablist: 'Tab list customization module for server/player display.',
+    'toggle sprint': 'Input module for persistent sprint behavior.',
+    zoom: 'Camera zoom module, often with sensitivity and keybind settings.'
+  };
+  return known[name] || `${moduleName} is a Flarial module. Its config values are loaded by the client to enable the module and customize rendering, input, layout, or behavior.`;
+}
+
+function flarialPropertyDescription(property, moduleName) {
+  const p = property.toLowerCase();
+  if (p === 'enabled') return `Turns the ${moduleName} module on or off in this profile.`;
+  if (p === 'favorite') return `Pins or marks ${moduleName} as a favorite in Flarial's module UI.`;
+  if (/keybind|bind|hotkey|key/.test(p)) return `Stores the activation keybind for ${moduleName}. Values are usually internal key or mouse-button codes.`;
+  if (/^x$|^y$|pos|anchor|align/.test(p)) return `Controls screen position or anchor placement for ${moduleName}.`;
+  if (/scale|size|width|height|padding|spacing|offset/.test(p)) return `Controls size, spacing, or layout density for ${moduleName}.`;
+  if (/color|colour|rgb|col|opacity|alpha/.test(p)) return `Controls color or transparency for ${moduleName}. RGB fields usually pair with opacity or color mode fields.`;
+  if (/blur|glow|shadow|border|outline|overlay|background|bg/.test(p)) return `Controls visual styling such as background, border, glow, blur, outline, or overlay for ${moduleName}.`;
+  if (/text|format|prefix|suffix|message|font|numeral/.test(p)) return `Controls text content, formatting, or display style for ${moduleName}.`;
+  if (/mode|type|style|preset/.test(p)) return `Selects a behavior or visual mode for ${moduleName}. Exact numeric values are client-defined enum choices.`;
+  if (/speed|duration|delay|time|cooldown/.test(p)) return `Controls timing, animation speed, delay, or duration for ${moduleName}.`;
+  if (/hide|show|render|display|visible/.test(p)) return `Controls whether a sub-element of ${moduleName} is rendered or hidden.`;
+  return `Stores the ${humanizeKeyPart(property)} setting for ${moduleName}.`;
+}
+
+function optionTooltipDetails(option) {
+  const details = [
+    ['Current value', interpretedValue(option)],
+    ['Sync guidance', optionSyncAdvice(option)]
+  ];
+
+  if (state.configType === 'flarial') {
+    const [moduleName, ...propertyParts] = option.key.split('.');
+    const property = propertyParts.join('.') || 'module';
+    details.unshift(['Module', flarialModuleDescription(moduleName)]);
+    details.splice(1, 0, ['Property', flarialPropertyDescription(property, moduleName)]);
+    return details;
+  }
+
+  const key = option.key.toLowerCase();
+  if (/^gfx_/.test(key)) details.unshift(['Bedrock area', 'Graphics/video option saved in options.txt. Bedrock may clamp this to supported device values on launch.']);
+  else if (/^audio_/.test(key)) details.unshift(['Bedrock area', 'Audio mixer option. Values are usually slider percentages or category volumes.']);
+  else if (/^ctrl_|keyboard|mouse|gamepad/.test(key)) details.unshift(['Bedrock area', 'Input/control option. Key codes and device-specific values can depend on keyboard, mouse, touch, or gamepad setup.']);
+  else if (/chat|language|ui_|safezone|hud|screen/.test(key)) details.unshift(['Bedrock area', 'Interface option controlling language, chat, HUD, screen layout, or accessibility-related display behavior.']);
+  else details.unshift(['Bedrock area', 'General Bedrock client preference or version-specific state stored in options.txt.']);
+  return details;
+}
+
 function optionHelpText(option) {
+  if (state.configType === 'flarial') {
+    const [moduleName, ...propertyParts] = option.key.split('.');
+    const property = propertyParts.join('.') || 'module';
+    return `${flarialPropertyDescription(property, moduleName)} ${flarialModuleDescription(moduleName)}`;
+  }
   if (OPTION_HELP[option.key]) return OPTION_HELP[option.key];
 
   const key = option.key.toLowerCase();
@@ -665,7 +1065,7 @@ async function saveOptionValue(key) {
 
   const data = await api(`/api/accounts/${encodeURIComponent(source.accountId)}/options`, {
     method: 'PATCH',
-    body: JSON.stringify({ basePath: state.basePath, key, value: input.value }),
+    body: JSON.stringify({ configType: state.configType, basePath: state.basePath, key, value: input.value }),
   });
 
   const option = state.sourceOptions.find((item) => item.key === key);
@@ -680,11 +1080,20 @@ function showOptionPopover(target, option) {
   const popover = document.createElement('div');
   popover.id = 'optionPopover';
   popover.className = 'option-popover';
+  const details = optionTooltipDetails(option)
+    .map(([label, text]) => `
+      <div class="option-popover-detail">
+        <b>${escapeHtml(label)}</b>
+        <p>${escapeHtml(text)}</p>
+      </div>
+    `)
+    .join('');
   popover.innerHTML = `
     <strong>${escapeHtml(option.key)}</strong>
     <span>${escapeHtml(option.category)} category</span>
     <p>${escapeHtml(optionHelpText(option))}</p>
-    <small>Current value: ${escapeHtml(valueText(option.value))}</small>
+    <div class="option-popover-details">${details}</div>
+    <small>Raw value: ${escapeHtml(valueText(option.value))}</small>
     ${option.syncable === false ? '<em>Locked: this option is never synced or edited by Option Sync.</em>' : ''}
   `;
   document.body.appendChild(popover);
@@ -758,16 +1167,116 @@ function bindOptionPopover() {
 async function uploadFile() {
   const file = $('uploadFile').files[0];
   if (!file) return;
-  if (file.name.toLowerCase() !== 'options.txt') throw new Error('Please upload a file named options.txt.');
+  const copy = activeModeCopy();
+  if (state.configType === 'vanilla' && file.name.toLowerCase() !== 'options.txt') throw new Error('Please upload a file named options.txt.');
+  if (state.configType === 'flarial' && !file.name.toLowerCase().endsWith('.json')) throw new Error('Please upload a Flarial .json config file.');
   const body = new FormData();
   body.append('options', file);
+  body.append('configType', state.configType);
   const data = await api('/api/upload', { method: 'POST', body });
   state.uploadId = data.uploadId;
-  $('uploadStatus').textContent = `${file.name} uploaded (${data.optionCount} options).`;
-  toast('Upload ready', `${data.optionCount} options found.`, 'ok');
+  $('uploadStatus').textContent = `${file.name} uploaded (${data.optionCount} values).`;
+  toast('Upload ready', `${data.optionCount} ${state.configType === 'flarial' ? 'config values' : 'options'} found in ${copy.configFile}.`, 'ok');
+}
+
+async function importFlarialConfig() {
+  const file = $('flarialImportFile').files[0];
+  if (!file) throw new Error('Select a Flarial .json config to import.');
+  if (!file.name.toLowerCase().endsWith('.json')) throw new Error('Please import a .json config file.');
+
+  const body = new FormData();
+  body.append('config', file);
+  body.append('basePath', state.basePath);
+  body.append('targetName', $('flarialImportName').value.trim() || file.name);
+  body.append('backup', 'true');
+
+  const data = await api('/api/flarial/import', { method: 'POST', body });
+  writeOutput([
+    `Imported Flarial config: ${data.fileName}`,
+    `Values: ${data.valueCount}`,
+    `Path: ${data.path}`,
+    data.backup ? `Backup: ${data.backup.fileName}` : 'Backup: off'
+  ].join('\n'));
+  toast('Flarial config imported', data.fileName, 'ok');
+  $('flarialImportFile').value = '';
+  $('flarialImportName').value = '';
+  await loadAccounts({ preserveOutput: true });
+  await loadBackups({ silent: true });
+}
+
+async function importConfig() {
+  renderImportValidation(null);
+  const kind = selectedImportKind();
+  const body = new FormData();
+  body.append('configType', state.configType);
+  body.append('basePath', state.basePath);
+  body.append('backup', 'true');
+
+  if (kind === 'folder') {
+    const files = [...$('importFolder').files];
+    if (!files.length) throw new Error('Select a folder to import.');
+    files.forEach((file) => {
+      body.append('files', file, file.webkitRelativePath || file.name);
+    });
+  } else {
+    const file = $('importFile').files[0];
+    if (!file) throw new Error('Select a config file to import.');
+    if (state.configType === 'vanilla') {
+      if (file.name.toLowerCase() !== 'options.txt') throw new Error('Vanilla imports require a file named options.txt.');
+      if (!$('importTargetAccount').value) throw new Error('Select the target account for this options.txt import.');
+      body.append('accountId', $('importTargetAccount').value);
+    } else {
+      if (!file.name.toLowerCase().endsWith('.json')) throw new Error('Flarial imports require a .json profile file.');
+      body.append('targetName', $('importTargetName').value.trim() || file.name);
+    }
+    body.append('config', file);
+  }
+
+  try {
+    const endpoint = kind === 'folder' ? '/api/import/folder' : '/api/import/file';
+    const data = await api(endpoint, { method: 'POST', body });
+    const validation = Array.isArray(data.validations) ? { ok: true, title: 'Folder import validation passed', warnings: [], advice: [] } : data.validation;
+    renderImportValidation(validation || { ok: true, title: 'Import validation passed' });
+    const written = data.written || [data.path].filter(Boolean);
+    writeOutput([
+      `Import complete: ${state.configType}`,
+      `Written item(s): ${written.length}`,
+      data.backup ? `Backup: ${data.backup.fileName}` : 'Backup: off',
+      ...written.slice(0, 12).map((item) => `  ${item}`)
+    ].join('\n'));
+    toast('Import complete', `${written.length} item(s) written.`, 'ok');
+    $('importFile').value = '';
+    $('importFolder').value = '';
+    await loadAccounts({ preserveOutput: true });
+    await loadBackups({ silent: true });
+  } catch (error) {
+    if (error.validation) {
+      renderImportValidation(error.validation, { blocked: true });
+      writeOutput([
+        error.validation.title || 'Import blocked',
+        '',
+        ...(error.validation.warnings || []),
+        '',
+        ...(error.validation.advice || [])
+      ].join('\n'));
+      toast('Import blocked', 'The current config appears newer or more complete. Read the validation advice.', 'warn');
+      return;
+    }
+    throw error;
+  }
 }
 
 async function preview() {
+  if (state.configType === 'flarial') {
+    const payload = flarialExportPayload();
+    validateFlarialExportPayload(payload, { previewOnly: true });
+    toast('Preparing export preview', payload.exportScope === 'folder' ? 'Full Flarial Config folder copy.' : 'Checking selected Flarial values.');
+    const data = await api('/api/flarial/export-preview', { method: 'POST', body: JSON.stringify(payload) });
+    writeOutput(data.preview || `Output: ${data.outputPath}`);
+    toast('Preview ready', data.outputPath, 'ok');
+    return;
+  }
+
   const payload = syncPayload();
   validatePayload(payload, { previewOnly: true });
   toast('Generating preview', `${payload.destinationIds.length} target account(s).`);
@@ -786,6 +1295,26 @@ async function preview() {
 }
 
 async function syncNow() {
+  if (state.configType === 'flarial') {
+    const payload = flarialExportPayload();
+    validateFlarialExportPayload(payload);
+    toast(payload.exportScope === 'folder' ? 'Folder export started' : 'Config save started', payload.destinationPath);
+    writeOutput('Flarial export is running. A local restore point is created first when backup is enabled.');
+    const data = await api('/api/flarial/export', { method: 'POST', body: JSON.stringify(payload) });
+    const lines = [
+      `Written: ${data.written.length}`,
+      `Failed: ${data.failed.length}`,
+      data.backup ? `Backup: ${data.backup.fileName}` : 'Backup: off',
+      '',
+      ...data.written.map((item) => `${item.path}: ${item.values || 0} value(s), ${item.changes || 0} change(s)`),
+      ...data.failed.map((item) => `${item.path || 'export'}: ${item.error}`),
+    ];
+    writeOutput(lines.join('\n'));
+    toast(data.failed.length ? 'Export completed with errors' : 'Export complete', data.written[0]?.path || payload.destinationPath, data.failed.length ? 'warn' : 'ok');
+    await loadBackups({ silent: true });
+    return;
+  }
+
   const payload = syncPayload();
   validatePayload(payload);
   toast('Sync started', `${payload.destinationIds.length} target account(s). Backup is ${payload.backup ? 'enabled' : 'off'}.`);
@@ -813,11 +1342,11 @@ async function syncNow() {
 
 async function createBackup() {
   const ids = backupScopeIds();
-  if (!ids.length) throw new Error('Select at least one account to back up.');
+  if (!ids.length) throw new Error(`Select at least one ${activeModeCopy().itemName} to back up.`);
   const label = $('backupLabel').value.trim() || 'manual';
   const data = await api('/api/backups', {
     method: 'POST',
-    body: JSON.stringify({ basePath: state.basePath, accountIds: ids, label }),
+    body: JSON.stringify({ configType: state.configType, basePath: state.basePath, accountIds: ids, label }),
   });
   writeOutput(`Backup created: ${data.backup.fileName}`);
   toast('Backup created', data.backup.fileName, 'ok');
@@ -859,6 +1388,7 @@ function renderBackups() {
         </div>
         <div class="backup-actions">
           <a href="/api/backups/${encodeURIComponent(backup.file)}">Download</a>
+          <button type="button" data-restore-backup="${escapeHtml(backup.file)}">Restore</button>
           <button type="button" data-delete-backup="${escapeHtml(backup.file)}">Delete</button>
         </div>
       </div>
@@ -868,9 +1398,58 @@ function renderBackups() {
 }
 
 function bindBackupActions() {
+  document.querySelectorAll('[data-restore-backup]').forEach((button) => {
+    button.addEventListener('click', () => restoreBackup(button.dataset.restoreBackup).catch(showError));
+  });
   document.querySelectorAll('[data-delete-backup]').forEach((button) => {
     button.addEventListener('click', () => deleteBackup(button.dataset.deleteBackup).catch(showError));
   });
+}
+
+async function restoreBackup(fileName) {
+  if (!fileName) return;
+  const copy = activeModeCopy();
+  const confirmed = window.confirm([
+    `Restore backup into the current ${copy.label} path?`,
+    '',
+    fileName,
+    '',
+    'A fresh backup of the current state will be created before importing.'
+  ].join('\n'));
+  if (!confirmed) return;
+
+  let data;
+  try {
+    data = await api(`/api/backups/${encodeURIComponent(fileName)}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({ configType: state.configType, basePath: state.basePath, backup: true }),
+    });
+  } catch (error) {
+    if (error.validation) {
+      renderImportValidation(error.validation, { blocked: true });
+      writeOutput([
+        error.validation.title || 'Restore blocked',
+        '',
+        ...(error.validation.warnings || []),
+        '',
+        ...(error.validation.advice || [])
+      ].join('\n'));
+      closeBackupModal();
+      toast('Restore blocked', 'The active config appears newer or more complete. Read the validation advice.', 'warn');
+      return;
+    }
+    throw error;
+  }
+  const restoredCount = Array.isArray(data.restored) ? data.restored.length : 0;
+  writeOutput([
+    `Restored backup: ${data.file}`,
+    `Mode: ${data.configType}`,
+    `Restored item(s): ${restoredCount}`,
+    data.preRestoreBackup ? `Pre-restore backup: ${data.preRestoreBackup.fileName}` : 'Pre-restore backup: off'
+  ].join('\n'));
+  toast('Backup restored', `${restoredCount} item(s) restored.`, 'ok');
+  await loadAccounts({ preserveOutput: true });
+  await loadBackups({ silent: true });
 }
 
 async function deleteBackup(fileName) {
@@ -918,8 +1497,9 @@ function formatBytes(bytes) {
 }
 
 function updateModeVisibility() {
-  $('categoryPicker').classList.toggle('hidden', selectedMode() !== 'categories');
-  $('keyPicker').classList.toggle('hidden', selectedMode() !== 'keys');
+  const folderExport = state.configType === 'flarial' && $('flarialExportScope')?.value === 'folder';
+  $('categoryPicker').classList.toggle('hidden', folderExport || selectedMode() !== 'categories');
+  $('keyPicker').classList.toggle('hidden', folderExport || selectedMode() !== 'keys');
   renderAdvancedSummary();
 }
 
@@ -938,6 +1518,13 @@ function valueText(value) {
 }
 
 function accountDetail(account) {
+  if (state.configType === 'flarial') {
+    const parts = [`${account.moduleCount || 0} modules`, `${account.optionCount || 0} values`];
+    if (account.backupFile) parts.push(account.backupFile);
+    if (account.modifiedAt) parts.push(`modified ${new Date(account.modifiedAt).toLocaleString()}`);
+    if (account.parseError) parts.push(`parse error`);
+    return escapeHtml(parts.join(' | '));
+  }
   const parts = [`${account.optionCount} options`];
   if (account.xuid) parts.push(`XUID ${account.xuid}`);
   if (account.userData?.entFile) parts.push(account.userData.entFile);
@@ -956,8 +1543,12 @@ function escapeHtml(value) {
 }
 
 async function init() {
-  const defaults = await api('/api/default-path');
+  applyConfigModeText();
+  const defaults = await api(`/api/default-path?configType=${encodeURIComponent(state.configType)}`);
   $('basePath').value = defaults.path;
+  document.querySelectorAll('[data-config-type]').forEach((button) => {
+    button.addEventListener('click', () => setConfigType(button.dataset.configType).catch(showError));
+  });
   $('fastModeBtn').addEventListener('click', () => {
     setRadioValue('sourceType', 'account');
     setRadioValue('mode', 'full');
@@ -973,6 +1564,7 @@ async function init() {
   document.querySelectorAll('[data-view="home"]').forEach((button) => button.addEventListener('click', () => showView('home')));
   $('loadBtn').addEventListener('click', () => loadAccounts().catch(showError));
   $('refreshBtn').addEventListener('click', () => loadAccounts().catch(showError));
+  $('chooseBasePathBtn').addEventListener('click', () => chooseFolderFor('basePath', 'base').catch(showError));
   $('openUsersFolderBtn').addEventListener('click', () => openUsersFolder().catch(showError));
   $('openAdvancedUsersFolderBtn').addEventListener('click', () => openUsersFolder().catch(showError));
   $('fastSyncBtn').addEventListener('click', () => syncNow().catch(showError));
@@ -1018,7 +1610,25 @@ async function init() {
     updateSelectedCount();
     toast('Targets updated', `${activeDestinationIds().length} target account(s) selected.`);
   });
+  $('fastDestinationPath').addEventListener('input', updateSelectedCount);
+  $('chooseFastDestinationBtn').addEventListener('click', () => chooseFolderFor('fastDestinationPath', 'export').catch(showError));
+  $('flarialDestinationPath').addEventListener('input', updateSelectedCount);
+  $('chooseFlarialDestinationBtn').addEventListener('click', () => chooseFolderFor('flarialDestinationPath', 'export').catch(showError));
+  $('flarialExportScope').addEventListener('change', () => {
+    const folder = $('flarialExportScope').value === 'folder';
+    $('backupToggle').checked = true;
+    $('categoryPicker').classList.toggle('hidden', folder || selectedMode() !== 'categories');
+    $('keyPicker').classList.toggle('hidden', folder || selectedMode() !== 'keys');
+    $('flarialIncludeLegacy').disabled = !folder;
+    renderAdvancedSummary();
+    updateSelectedCount();
+  });
   $('uploadFile').addEventListener('change', () => uploadFile().catch(showError));
+  $('importConfigBtn').addEventListener('click', () => importConfig().catch(showError));
+  document.querySelectorAll('input[name="importKind"]').forEach((input) => input.addEventListener('change', () => {
+    renderImportValidation(null);
+    renderImportControls();
+  }));
   $('keyFilter').addEventListener('input', renderKeys);
   bindOptionPopover();
   $('backupToggle').addEventListener('change', renderAdvancedSummary);
@@ -1031,6 +1641,7 @@ async function init() {
 }
 
 function showError(error) {
+  if (error.validation) renderImportValidation(error.validation, { blocked: true });
   $('homeStatus').textContent = `Error: ${error.message}`;
   writeOutput(`Error: ${error.message}`);
   toast('Action failed', error.message, 'err');
