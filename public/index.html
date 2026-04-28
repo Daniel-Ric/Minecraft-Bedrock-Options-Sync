@@ -7,22 +7,26 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <main class="app-bg">
+  <main id="appRoot" class="app-bg">
     <section id="homeView" class="home-view">
       <div class="home-content">
         <span class="eyebrow">Minecraft Bedrock Options Manager</span>
         <h1>Option Sync</h1>
-        <p>Sync your Bedrock options.txt between local accounts with safe defaults and automatic backups.</p>
+        <p id="slogan">Sync your Bedrock options.txt between local accounts with safe defaults and automatic backups.</p>
+        <div class="config-tabs" role="tablist" aria-label="Config mode">
+          <button id="vanillaTab" class="active" type="button" role="tab" aria-selected="true" data-config-type="vanilla">Vanilla</button>
+          <button id="flarialTab" type="button" role="tab" aria-selected="false" data-config-type="flarial">Flarial Client</button>
+        </div>
 
         <div class="home-actions">
           <button id="fastModeBtn" class="glass-button fast" type="button">
             <span>Fast Mode</span>
-            <small>Choose source and targets. Everything else is automatic.</small>
+            <small id="fastModeCopy">Choose source and targets. Everything else is automatic.</small>
           </button>
 
           <button id="advancedModeBtn" class="glass-button" type="button">
             <span>Advanced Mode</span>
-            <small>Upload files, pick categories, select keys, and manage backups.</small>
+            <small id="advancedModeCopy">Upload files, pick categories, select keys, and manage backups.</small>
           </button>
         </div>
 
@@ -36,10 +40,15 @@
               <span>From</span>
               <select id="sourceAccount"></select>
             </label>
-            <label class="fast-field">
+            <label id="fastTargetsField" class="fast-field">
               <span>To</span>
               <select id="fastTargets" multiple></select>
             </label>
+            <label id="fastDestinationField" class="fast-field hidden">
+              <span>Save to</span>
+              <input id="fastDestinationPath" type="text" spellcheck="false">
+            </label>
+            <button id="chooseFastDestinationBtn" class="hidden" type="button">Choose</button>
             <button id="fastSyncBtn" class="primary fast-sync-button" type="button">Sync</button>
           </div>
 
@@ -64,6 +73,10 @@
           <span class="eyebrow">Advanced Mode</span>
           <h2>Option Sync Control</h2>
         </div>
+        <div class="config-tabs advanced-config-tabs" role="tablist" aria-label="Advanced config mode">
+          <button class="active" type="button" role="tab" aria-selected="true" data-config-type="vanilla">Vanilla</button>
+          <button type="button" role="tab" aria-selected="false" data-config-type="flarial">Flarial Client</button>
+        </div>
       </header>
 
       <section class="advanced-layout">
@@ -71,16 +84,17 @@
           <div class="panel-head">
             <div>
               <span class="step">Setup</span>
-              <h3>Users folder</h3>
+              <h3 id="pathPanelTitle">Users folder</h3>
             </div>
             <button id="openAdvancedUsersFolderBtn" type="button">Open Folder</button>
           </div>
           <div class="advanced-command-bar">
             <label>
-              <span>Minecraft Bedrock Users path</span>
+              <span id="pathLabel">Minecraft Bedrock Users path</span>
               <input id="basePath" type="text" spellcheck="false">
             </label>
             <div class="advanced-command-actions">
+              <button id="chooseBasePathBtn" type="button">Choose Folder</button>
               <button id="loadBtn" type="button">Load</button>
               <button id="refreshBtn" type="button">Refresh</button>
             </div>
@@ -92,19 +106,34 @@
             <div class="step-rail">
               <span>1</span>
               <div>
-                <h3>Select targets</h3>
-                <p>Choose which accounts receive the options.</p>
+                <h3 id="targetsTitle">Select targets</h3>
+                <p id="targetsCopy">Choose which accounts receive the options.</p>
               </div>
             </div>
             <div class="step-content">
               <div class="section-head">
-                <span class="step">Targets</span>
-                <div class="actions">
+              <span id="targetsStepLabel" class="step">Targets</span>
+                <div id="targetActions" class="actions">
                   <button id="selectAllBtn" type="button">Select All</button>
                   <button id="selectNoneBtn" type="button">Clear</button>
                 </div>
               </div>
               <div id="accounts" class="account-list"></div>
+              <div id="flarialExportPanel" class="flarial-export-panel hidden">
+                <label>
+                  <span>Destination on this PC</span>
+                  <input id="flarialDestinationPath" type="text" spellcheck="false">
+                </label>
+                <button id="chooseFlarialDestinationBtn" type="button">Choose Folder</button>
+                <label>
+                  <span>Export scope</span>
+                  <select id="flarialExportScope">
+                    <option value="profile">Selected profile JSON</option>
+                    <option value="folder">Complete Config folder</option>
+                  </select>
+                </label>
+                <label class="switch flarial-legacy-toggle"><input id="flarialIncludeLegacy" type="checkbox" checked> Include Legacy folder</label>
+              </div>
             </div>
           </article>
 
@@ -124,16 +153,16 @@
               <div class="choice-grid two">
                 <label class="choice-card">
                   <input type="radio" name="sourceType" value="account" checked>
-                  <span><strong>Use base account</strong><small>Copy from the selected source account.</small></span>
+                  <span><strong id="sourceAccountTitle">Use base account</strong><small id="sourceAccountCopy">Copy from the selected source account.</small></span>
                 </label>
                 <label class="choice-card">
                   <input type="radio" name="sourceType" value="upload">
-                  <span><strong>Upload options.txt</strong><small>Use an external file as source.</small></span>
+                  <span><strong id="uploadSourceTitle">Upload options.txt</strong><small id="uploadSourceCopy">Use an external file as source.</small></span>
                 </label>
               </div>
               <div class="source-input-row">
                 <label id="advancedAccountSourceBlock" class="advanced-source-select">
-                  <span>Base account</span>
+                  <span id="sourceSelectLabel">Base account</span>
                   <select id="advancedSourceAccount"></select>
                 </label>
                 <div id="uploadBlock" class="hidden">
@@ -183,6 +212,54 @@
             <div class="step-rail">
               <span>4</span>
               <div>
+                <h3>Import safely</h3>
+                <p>Validate files or folders before they touch the active config.</p>
+              </div>
+            </div>
+            <div class="step-content">
+              <div class="section-head">
+                <span id="importStepLabel" class="step">Import</span>
+                <span id="importValidationBadge" class="badge">No import selected</span>
+              </div>
+              <div class="import-panel">
+                <div class="choice-grid two import-kind-grid">
+                  <label class="choice-card">
+                    <input type="radio" name="importKind" value="file" checked>
+                    <span><strong>Import file</strong><small id="importFileCopy">Import one options.txt into a target account.</small></span>
+                  </label>
+                  <label class="choice-card">
+                    <input type="radio" name="importKind" value="folder">
+                    <span><strong>Import folder</strong><small id="importFolderCopy">Import a folder containing account options.txt files.</small></span>
+                  </label>
+                </div>
+                <div class="import-grid">
+                  <label id="importTargetAccountBlock">
+                    <span id="importTargetAccountLabel">Target account</span>
+                    <select id="importTargetAccount"></select>
+                  </label>
+                  <label id="importTargetNameBlock" class="hidden">
+                    <span>Flarial profile file name</span>
+                    <input id="importTargetName" type="text" spellcheck="false" placeholder="imported-profile.json">
+                  </label>
+                  <label id="importFileBlock">
+                    <span id="importFileLabel">Config file</span>
+                    <input id="importFile" type="file" accept=".txt">
+                  </label>
+                  <label id="importFolderBlock" class="hidden">
+                    <span id="importFolderLabel">Config folder</span>
+                    <input id="importFolder" type="file" webkitdirectory directory multiple>
+                  </label>
+                  <button id="importConfigBtn" class="primary" type="button">Validate and Import</button>
+                </div>
+                <div id="importValidationPanel" class="import-validation-panel hidden"></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="workflow-step">
+            <div class="step-rail">
+              <span>5</span>
+              <div>
                 <h3>Preview and sync</h3>
                 <p>Review changes before applying them.</p>
               </div>
@@ -198,8 +275,8 @@
         </section>
 
         <button id="syncBtn" class="primary sync-cta" type="button">
-          <strong>Sync Now</strong>
-          <span>Start syncing with the selected settings</span>
+          <strong id="syncCtaTitle">Sync Now</strong>
+          <span id="syncCtaCopy">Start syncing with the selected settings</span>
         </button>
 
         <section class="glass-panel recovery-panel">
